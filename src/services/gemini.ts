@@ -1,8 +1,20 @@
 import { GoogleGenAI, Type } from "@google/genai";
+import { getRuntimeConfig } from "../lib/config";
 
-const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY || '' });
+const getGeminiClient = () => {
+  const config = getRuntimeConfig();
+  const apiKey = config.VITE_GEMINI_API_KEY;
+  
+  if (!apiKey) {
+    throw new Error('Gemini API key is not set. Please configure VITE_GEMINI_API_KEY environment variable.');
+  }
+  
+  return new GoogleGenAI({ apiKey });
+};
 
 export const analyzeSituation = async (input: string) => {
+  const ai = getGeminiClient();
+  
   const response = await ai.models.generateContent({
     model: "gemini-3-flash-preview",
     contents: [{ parts: [{ text: input }] }],

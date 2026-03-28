@@ -59,33 +59,63 @@ The built files will be in the `dist/` directory.
 
 ## Docker Deployment
 
-To build the Docker image with environment variables:
+To build the Docker image:
 
 ```bash
-docker build \
-  --build-arg VITE_GEMINI_API_KEY=your_key \
-  --build-arg VITE_SUPABASE_URL=your_url \
-  --build-arg VITE_SUPABASE_ANON_KEY=your_anon_key \
-  -t nexus-app .
+docker build -t nexus-app .
 ```
 
-To run locally:
+To run locally with environment variables (at runtime):
 
 ```bash
-docker run -p 8080:8080 nexus-app
+docker run -p 8080:8080 \
+  -e VITE_GEMINI_API_KEY=your_key \
+  -e VITE_SUPABASE_URL=your_url \
+  -e VITE_SUPABASE_ANON_KEY=your_anon_key \
+  nexus-app
 ```
 
-## Cloud Deployment (Google Cloud Build)
+Then open [http://localhost:8080](http://localhost:8080) in your browser.
 
-The `cloudbuild.yaml` file is configured to deploy to Cloud Run. Set the environment variables when triggering the build:
+## Cloud Deployment (Google Cloud Run)
 
+### Via Google Cloud Console
+
+1. Push the Docker image to Container Registry:
+   ```bash
+   docker tag nexus-app gcr.io/YOUR_PROJECT_ID/nexus-app
+   docker push gcr.io/YOUR_PROJECT_ID/nexus-app
+   ```
+
+2. Deploy to Cloud Run with environment variables:
+   ```bash
+   gcloud run deploy nexus-app \
+     --image gcr.io/YOUR_PROJECT_ID/nexus-app \
+     --platform managed \
+     --region us-central1 \
+     --port 8080 \
+     --allow-unauthenticated \
+     --set-env-vars VITE_GEMINI_API_KEY=your_key,VITE_SUPABASE_URL=your_url,VITE_SUPABASE_ANON_KEY=your_anon_key
+   ```
+
+### Via Cloud Build (Automated CI/CD)
+
+Configure your Cloud Build trigger with the following substitution variables:
+- `_VITE_GEMINI_API_KEY`: Your Gemini API key
+- `_VITE_SUPABASE_URL`: Your Supabase project URL
+- `_VITE_SUPABASE_ANON_KEY`: Your Supabase anon key
+
+When you push to the repository, Cloud Build will:
+1. Build the Docker image
+2. Push it to Container Registry
+3. Deploy to Cloud Run with the environment variables injected at runtime
+
+Or manually trigger a build with substitutions:
 ```bash
 gcloud builds submit \
   --config=cloudbuild.yaml \
   --substitutions=_VITE_GEMINI_API_KEY=your_key,_VITE_SUPABASE_URL=your_url,_VITE_SUPABASE_ANON_KEY=your_anon_key
 ```
-
-Or configure them in the Cloud Build trigger settings in the Google Cloud Console.
 
 ## Available Scripts
 
